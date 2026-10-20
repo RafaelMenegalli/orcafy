@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ApiError, json, parseBody, route } from "@/lib/api";
 import { createSessionCookie, hashPassword } from "@/lib/auth";
 import { registerSchema } from "@/lib/validation";
+import { linkPendingEvents } from "@/lib/billing";
 
 export const POST = route(async (req) => {
   const data = await parseBody(req, registerSchema);
@@ -20,6 +21,9 @@ export const POST = route(async (req) => {
       portfolioUrls: [],
     },
   });
+
+  // Comprou o PRO antes de criar a conta? Ativa agora.
+  await linkPendingEvents(user.id, user.email);
 
   await createSessionCookie({ sub: user.id, email: user.email, name: user.name });
   return json({ ok: true, user: { id: user.id, name: user.name } }, 201);

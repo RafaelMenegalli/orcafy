@@ -3,6 +3,7 @@ import { ApiError, json, parseBody, requireApiUserId, route } from "@/lib/api";
 import { quoteSchema } from "@/lib/validation";
 import { generateSlug } from "@/lib/slug";
 import { FREE_QUOTE_LIMIT } from "@/lib/quote";
+import { isProActive } from "@/lib/plan";
 import { expireOverdueQuotes, quoteInclude } from "@/lib/data";
 
 export const GET = route(async () => {
@@ -32,10 +33,10 @@ export const POST = route(async (req) => {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { plan: true, quotesCreatedCount: true },
+    select: { plan: true, planExpiresAt: true, quotesCreatedCount: true },
   });
   if (!user) throw new ApiError(401, "Sessão inválida.", "UNAUTHORIZED");
-  if (user.plan === "FREE" && user.quotesCreatedCount >= FREE_QUOTE_LIMIT) {
+  if (!isProActive(user) && user.quotesCreatedCount >= FREE_QUOTE_LIMIT) {
     throw new ApiError(
       402,
       `Você atingiu o limite de ${FREE_QUOTE_LIMIT} orçamentos do plano grátis. Assine o PRO para enviar orçamentos ilimitados.`,

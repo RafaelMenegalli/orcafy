@@ -28,6 +28,9 @@ Rodar o seed de novo **recria** a conta demo do zero.
 | --- | --- | --- |
 | `DATABASE_URL` | sim | Connection string do Postgres (Neon, com `sslmode=require`) |
 | `JWT_SECRET` | sim | Assinatura dos tokens de sessão (mín. 16 caracteres) |
+| `CAKTO_WEBHOOK_SECRET` | sim (para o PRO) | Chave secreta do webhook configurada na Cakto |
+| `CAKTO_CHECKOUT_URL` | não | Link do checkout do PRO (padrão: o link atual do produto) |
+| `CAKTO_PRODUCT_IDS` | não | IDs aceitos no webhook (produto/oferta), separados por vírgula |
 | `ADMIN_SECRET` | não | Habilita `POST /api/admin/plan` para ativar/desativar o PRO |
 | `NEXT_PUBLIC_APP_URL` | não | URL pública usada nos links enviados (sem ela, usa o host da requisição) |
 | `NEXT_PUBLIC_SUPPORT_WHATSAPP` | não | Número (DDI+DDD) para o botão "Assinar PRO pelo WhatsApp" |
@@ -54,7 +57,16 @@ Veja `.env.example`.
 - `→ HOT` com 3+ aberturas, 120s+ de leitura, opcional marcado ou Pix aberto/copiado.
 - `EXPIRED` é aplicado automaticamente quando a validade passa (sem cron).
 
-## Ativar o PRO de um usuário
+## Assinatura PRO (Cakto)
+
+- O botão **Assinar o PRO** (Perfil → Seu plano) abre o checkout da Cakto com e-mail e nome já preenchidos.
+- A Cakto chama `POST /api/webhooks/cakto`; o corpo traz o campo `secret`, validado contra `CAKTO_WEBHOOK_SECRET`.
+- `purchase_approved`, `subscription_created` e `subscription_renewed` liberam o PRO por 33 dias (30 + 3 de carência) a partir do pagamento.
+- `subscription_renewal_refused` marca pagamento pendente; `subscription_canceled` mantém o acesso até o fim do período pago; `refund` e `chargeback` removem o PRO na hora.
+- Eventos de outros produtos são ignorados. Reenvios são idempotentes. Todos os webhooks ficam registrados na tabela `PaymentEvent`.
+- Compra feita antes do cadastro é vinculada automaticamente ao criar a conta com o mesmo e-mail. Compra com outro e-mail é vinculada pelo usuário em **Já paguei com outro e-mail** (e-mail da compra + código do pedido).
+
+## Ativar o PRO manualmente
 
 ```bash
 curl -X POST https://SEU_DOMINIO/api/admin/plan \

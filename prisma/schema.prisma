@@ -30,6 +30,13 @@ enum QuoteStatus {
   EXPIRED
 }
 
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE // Renovação recusada, ainda dentro da carência
+  CANCELED // Cancelada: acesso até planExpiresAt
+  REVOKED // Reembolso ou chargeback: acesso removido
+}
+
 enum EventType {
   VIEWED
   TIME_SPENT
@@ -40,28 +47,36 @@ enum EventType {
 }
 
 model User {
-  id                  String     @id @default(cuid())
+  id                  String              @id @default(cuid())
   name                String
   businessName        String
-  email               String     @unique
+  email               String              @unique
   passwordHash        String
   whatsapp            String // Apenas números com DDI/DDD (ex: 5511999999999)
   logoUrl             String?
   bio                 String? // Resumo/especialidade do profissional
   portfolioUrls       String[] // Array com até 4 URLs de fotos de trabalhos reais
-  pixKeyType          PixKeyType @default(CPF)
+  pixKeyType          PixKeyType          @default(CPF)
   pixKey              String?
   pixHolderName       String? // Nome do titular para o payload EMV (até 25 chars)
-  pixCity             String?    @default("SAO PAULO")
-  defaultDownPayment  Int        @default(50) // % padrão de sinal (ex: 30%, 50%, 100%)
-  defaultWarrantyText String?    @default("Garantia de 90 dias sobre o serviço executado.")
-  plan                PlanType   @default(FREE)
-  quotesCreatedCount  Int        @default(0) // Limite de 5 no plano FREE
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  pixCity             String?             @default("SAO PAULO")
+  defaultDownPayment  Int                 @default(50) // % padrão de sinal (ex: 30%, 50%, 100%)
+  defaultWarrantyText String?             @default("Garantia de 90 dias sobre o serviço executado.")
+  plan                PlanType            @default(FREE)
+  quotesCreatedCount  Int                 @default(0) // Limite de 5 no plano FREE
+  planStatus          SubscriptionStatus? // Situação da assinatura PRO na Cakto
+  planExpiresAt       DateTime? // Fim do acesso PRO pago (null + PRO = sem expiração, ex: ativado pelo admin)
+  caktoSubscriptionId String?
+  caktoCustomerEmail  String? // E-mail usado na compra (pode diferir do e-mail de login)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
-  catalogItems CatalogItem[]
-  quotes       Quote[]
+  catalogItems  CatalogItem[]
+  quotes        Quote[]
+  paymentEvents PaymentEvent[]
+
+  @@index([caktoCustomerEmail])
+  @@index([caktoSubscriptionId])
 }
 
 model CatalogItem {
@@ -144,4 +159,29 @@ model QuoteEvent {
   createdAt DateTime  @default(now())
 
   @@index([quoteId, createdAt])
+}
+
+/**
+ * Log de todos os webhooks de pagamento recebidos (auditoria + idempotência).
+ */
+model PaymentEvent {
+  id         String   @id @default(cuid())
+  provider   String   @default("cakto")
+  dedupeKey  String   @unique
+  eventType  String
+  externalId String?
+  refId      String?
+  email      String?
+  status     String?
+  amount     Float?
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  processed  Boolean  @default(false)
+  note       String?
+  payload    String // JSON recebido, sem o campo "secret"
+  createdAt  DateTime @default(now())
+
+  @@index([email])
+  @@index([userId])
+  @@index([refId])
 }

@@ -1,13 +1,22 @@
 import { requireUser } from "@/lib/auth";
+import { caktoConfig } from "@/lib/billing";
+import { isProActive } from "@/lib/plan";
 import { PageHeader } from "@/components/page-header";
 import { ProfileForm } from "@/components/profile-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Perfil" };
 
-export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
+function checkoutHref(email: string, name: string) {
+  const url = new URL(caktoConfig.checkoutUrl);
+  url.searchParams.set("email", email);
+  url.searchParams.set("name", name);
+  return url.toString();
+}
+
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ welcome?: string; pro?: string }> }) {
   const user = await requireUser();
-  const { welcome } = await searchParams;
+  const { welcome, pro } = await searchParams;
   const support = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP?.replace(/\D/g, "") || null;
 
   return (
@@ -16,6 +25,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <ProfileForm
         welcome={welcome === "1"}
         supportWhatsapp={support}
+        billing={{
+          isPro: isProActive(user),
+          planStatus: user.planStatus,
+          planExpiresAt: user.planExpiresAt?.toISOString() ?? null,
+          checkoutHref: checkoutHref(user.email, user.name),
+          justPaid: pro === "1",
+        }}
         profile={{
           name: user.name,
           businessName: user.businessName,
@@ -30,7 +46,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           pixCity: user.pixCity,
           defaultDownPayment: user.defaultDownPayment,
           defaultWarrantyText: user.defaultWarrantyText,
-          plan: user.plan,
           quotesCreatedCount: user.quotesCreatedCount,
         }}
       />

@@ -2,16 +2,16 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, CheckCircle2, Crown, ImagePlus, Link2, LogOut, Save, Trash2, AlertCircle, MessageCircle } from "lucide-react";
+import { Camera, CheckCircle2, ImagePlus, Link2, LogOut, Save, Trash2, AlertCircle } from "lucide-react";
 import { Button, Chip, Input, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { PixQr } from "@/components/pix-qr";
 import { InstallApp } from "@/components/install-app";
+import { PlanCard, type BillingDTO } from "@/components/plan-card";
 import { apiFetch, errorMessage } from "@/lib/client-api";
 import { resizeImage } from "@/lib/image";
-import { maskPhoneInput, whatsappLink, cn } from "@/lib/format";
+import { maskPhoneInput } from "@/lib/format";
 import { PIX_KEY_LABELS, PIX_KEY_PLACEHOLDERS, tryBuildPixPayload, type PixKeyType } from "@/lib/pix";
-import { FREE_QUOTE_LIMIT } from "@/lib/quote";
 import { buttonClass } from "@/lib/button-class";
 
 export type ProfileDTO = {
@@ -28,7 +28,6 @@ export type ProfileDTO = {
   pixCity: string | null;
   defaultDownPayment: number;
   defaultWarrantyText: string | null;
-  plan: "FREE" | "PRO";
   quotesCreatedCount: number;
 };
 
@@ -42,7 +41,17 @@ function Section({ id, title, subtitle, children }: { id?: string; title: string
   );
 }
 
-export function ProfileForm({ profile, supportWhatsapp, welcome }: { profile: ProfileDTO; supportWhatsapp: string | null; welcome: boolean }) {
+export function ProfileForm({
+  profile,
+  billing,
+  supportWhatsapp,
+  welcome,
+}: {
+  profile: ProfileDTO;
+  billing: BillingDTO;
+  supportWhatsapp: string | null;
+  welcome: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const logoInput = useRef<HTMLInputElement>(null);
@@ -125,8 +134,6 @@ export function ProfileForm({ profile, supportWhatsapp, welcome }: { profile: Pr
       setSaving(false);
     }
   }
-
-  const usage = Math.min(profile.quotesCreatedCount, FREE_QUOTE_LIMIT);
 
   return (
     <div className="space-y-4 pb-28">
@@ -309,55 +316,7 @@ export function ProfileForm({ profile, supportWhatsapp, welcome }: { profile: Pr
       </Section>
 
       <Section id="plano" title="Seu plano">
-        {profile.plan === "PRO" ? (
-          <div className="flex items-center gap-3 rounded-2xl bg-ink-900 p-4 text-white">
-            <Crown className="h-6 w-6 text-amber-400" />
-            <div>
-              <p className="font-bold">Orçafy PRO</p>
-              <p className="text-sm text-ink-300">Orçamentos ilimitados ativos.</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div>
-              <div className="flex justify-between text-sm">
-                <span className="font-medium">Grátis</span>
-                <span className="tabular text-ink-500">
-                  {usage}/{FREE_QUOTE_LIMIT} orçamentos usados
-                </span>
-              </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink-100">
-                <div
-                  className={cn("h-full rounded-full", usage >= FREE_QUOTE_LIMIT ? "bg-rose-500" : "bg-brand-500")}
-                  style={{ width: `${(usage / FREE_QUOTE_LIMIT) * 100}%` }}
-                />
-              </div>
-            </div>
-            <div className="rounded-2xl bg-ink-900 p-4 text-white">
-              <p className="flex items-center gap-2 font-bold">
-                <Crown className="h-5 w-5 text-amber-400" /> PRO · R$ 29/mês
-              </p>
-              <p className="mt-1 text-sm text-ink-300">Orçamentos ilimitados, Radar completo e suporte prioritário.</p>
-              {supportWhatsapp ? (
-                <a
-                  href={whatsappLink(
-                    supportWhatsapp,
-                    `Olá! Quero assinar o Orçafy PRO. Meu e-mail de cadastro é ${profile.email}.`,
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={buttonClass("primary", "lg", "mt-4 w-full")}
-                >
-                  <MessageCircle className="h-5 w-5" /> Assinar PRO pelo WhatsApp
-                </a>
-              ) : (
-                <p className="mt-3 rounded-xl bg-white/10 p-3 text-xs text-ink-200">
-                  Para assinar, fale com o administrador do Orçafy informando o e-mail <strong>{profile.email}</strong>.
-                </p>
-              )}
-            </div>
-          </>
-        )}
+        <PlanCard billing={billing} email={profile.email} quotesUsed={profile.quotesCreatedCount} supportWhatsapp={supportWhatsapp} />
       </Section>
 
       <Section title="App no celular" subtitle="Acesse o Radar com um toque, como um app.">

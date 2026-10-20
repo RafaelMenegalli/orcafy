@@ -6,6 +6,7 @@ import { getDashboardStats, quoteInclude, quoteTotals } from "@/lib/data";
 import { formatBRL } from "@/lib/money";
 import { firstName, timeAgo, whatsappLink, formatDuration } from "@/lib/format";
 import { FREE_QUOTE_LIMIT } from "@/lib/quote";
+import { isProActive } from "@/lib/plan";
 import { followUpMessage } from "@/lib/messages";
 import { getBaseUrl } from "@/lib/url";
 import { RadarFeed } from "@/components/radar-feed";
@@ -66,7 +67,7 @@ export default async function DashboardPage() {
         </Link>
       )}
 
-      {user.plan === "FREE" && (
+      {!isProActive(user) && (
         <div className="mb-4 rounded-2xl bg-white p-4 ring-1 ring-ink-100">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-ink-700">Plano Grátis</span>

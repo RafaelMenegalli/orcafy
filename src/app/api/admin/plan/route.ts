@@ -27,8 +27,9 @@ export const POST = route(async (req) => {
   const { email, plan } = await parseBody(req, schema);
   const user = await prisma.user.update({
     where: { email },
-    data: { plan },
-    select: { id: true, email: true, plan: true },
+    // Ativação manual: PRO sem prazo. FREE: limpa a assinatura.
+    data: plan === "PRO" ? { plan, planStatus: "ACTIVE", planExpiresAt: null } : { plan, planStatus: null, planExpiresAt: null },
+    select: { id: true, email: true, plan: true, planExpiresAt: true },
   }).catch(() => null);
   if (!user) throw new ApiError(404, "Usuário não encontrado.");
   return json({ user });

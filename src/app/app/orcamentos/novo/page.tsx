@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getBaseUrl } from "@/lib/url";
 import { FREE_QUOTE_LIMIT } from "@/lib/quote";
+import { isProActive } from "@/lib/plan";
 import { PageHeader } from "@/components/page-header";
 import { QuoteBuilder, type QuoteDraft } from "@/components/quote-builder";
 
@@ -58,7 +59,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
           warrantyText: user.defaultWarrantyText ?? "",
         }}
         user={{ name: user.name, businessName: user.businessName, hasPix: Boolean(user.pixKey) }}
-        limitReached={user.plan === "FREE" && user.quotesCreatedCount >= FREE_QUOTE_LIMIT}
+        limitReached={!isProActive(user) && user.quotesCreatedCount >= FREE_QUOTE_LIMIT}
       />
     </div>
   );
