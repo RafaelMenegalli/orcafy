@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlanType {
+  FREE
+  PRO
+}
+
+enum PixKeyType {
+  CPF
+  CNPJ
+  EMAIL
+  PHONE
+  RANDOM
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  VIEWED
+  HOT // Cliente abriu múltiplas vezes ou interagiu com opcionais
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum EventType {
+  VIEWED
+  TIME_SPENT
+  BUMP_TOGGLED
+  PIX_OPENED
+  PIX_COPIED
+  APPROVED
+}
+
+model User {
+  id                  String     @id @default(cuid())
+  name                String
+  businessName        String
+  email               String     @unique
+  passwordHash        String
+  whatsapp            String // Apenas números com DDI/DDD (ex: 5511999999999)
+  logoUrl             String?
+  bio                 String? // Resumo/especialidade do profissional
+  portfolioUrls       String[] // Array com até 4 URLs de fotos de trabalhos reais
+  pixKeyType          PixKeyType @default(CPF)
+  pixKey              String?
+  pixHolderName       String? // Nome do titular para o payload EMV (até 25 chars)
+  pixCity             String?    @default("SAO PAULO")
+  defaultDownPayment  Int        @default(50) // % padrão de sinal (ex: 30%, 50%, 100%)
+  defaultWarrantyText String?    @default("Garantia de 90 dias sobre o serviço executado.")
+  plan                PlanType   @default(FREE)
+  quotesCreatedCount  Int        @default(0) // Limite de 5 no plano FREE
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  catalogItems CatalogItem[]
+  quotes       Quote[]
+}
+
+model CatalogItem {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  costMaterial   Float    @default(0) // Custo de matéria-prima/insumo
+  costLaborHours Float    @default(0) // Horas gastas
+  hourlyRate     Float    @default(0) // Valor da hora técnica
+  profitMargin   Float    @default(30) // Margem %
+  finalPrice     Float // Preço final sugerido/praticado
+  isBumpDefault  Boolean  @default(false) // Se pode ser sugerido como Order Bump
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Quote {
+  id                 String      @id @default(cuid())
+  slug               String      @unique // Código curto único para URL amigável (/p/slug)
+  userId             String
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientName         String
+  clientWhatsapp     String
+  title              String
+  description        String?
+  deliveryTime       String
+  warrantyText       String?
+  discount           Float       @default(0)
+  downPaymentPercent Int         @default(50) // % de sinal via Pix
+  status             QuoteStatus @default(SENT)
+  expiresAt          DateTime // Data/hora limite da validade da proposta
+  viewsCount         Int         @default(0)
+  totalTimeSeconds   Int         @default(0) // Tempo acumulado que o cliente ficou na página
+  lastViewedAt       DateTime?
+  approvedAt         DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  items  QuoteItem[]
+  bumps  QuoteBump[]
+  events QuoteEvent[]
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+}
+
+model QuoteItem {
+  id          String  @id @default(cuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  quantity    Int     @default(1)
+  unitPrice   Float
+
+  @@index([quoteId])
+}
+
+model QuoteBump {
+  id          String  @id @default(cuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Float
+  selected    Boolean @default(false) // Estado atual marcado pelo cliente na proposta
+
+  @@index([quoteId])
+}
+
+model QuoteEvent {
+  id        String    @id @default(cuid())
+  quoteId   String
+  quote     Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  type      EventType
+  metadata  String? // JSON stringificado (ex: qual bump clicou, segundos na tela, device)
+  createdAt DateTime  @default(now())
+
+  @@index([quoteId, createdAt])
+}
