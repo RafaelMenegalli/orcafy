@@ -12,6 +12,15 @@ export const caktoConfig = {
     .filter(Boolean),
 };
 
+/** Link do checkout do PRO com e-mail/nome preenchidos e as UTMs da campanha. */
+export function buildCheckoutUrl(user: { email: string; name: string }, tracking?: URLSearchParams) {
+  const url = new URL(caktoConfig.checkoutUrl);
+  url.searchParams.set("email", user.email);
+  url.searchParams.set("name", user.name);
+  tracking?.forEach((v, k) => url.searchParams.set(k, v));
+  return url.toString();
+}
+
 /** Dias de acesso por cobrança mensal aprovada (30 dias + 3 de carência para a renovação). */
 const ACCESS_DAYS_PER_CHARGE = 33;
 

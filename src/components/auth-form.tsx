@@ -3,12 +3,21 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { apiFetch, errorMessage } from "@/lib/client-api";
 import { maskPhoneInput } from "@/lib/format";
+import { pickTracking } from "@/lib/tracking";
 
-export function AuthForm({ mode, next }: { mode: "login" | "register"; next?: string }) {
+/** UTMs da campanha: as guardadas pelo script da Nexofy ou as da URL atual. */
+function trackingQuery() {
+  const stored = (window as Window & { nexofyUtm?: Record<string, unknown> }).nexofyUtm;
+  const fromStore = stored ? pickTracking(stored) : new URLSearchParams();
+  const qs = fromStore.toString() ? fromStore : pickTracking(new URLSearchParams(window.location.search));
+  return qs.toString() ? `?${qs}` : "";
+}
+
+export function AuthForm({ mode, next, pro }: { mode: "login" | "register"; next?: string; pro?: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +35,11 @@ export function AuthForm({ mode, next }: { mode: "login" | "register"; next?: st
         await apiFetch("/api/auth/login", { body: { email: form.email, password: form.password } });
       } else {
         await apiFetch("/api/auth/register", { body: form });
+      }
+      // Assinatura direta: conta criada → checkout da Cakto (via /assinar, que monta o link no servidor).
+      if (pro || next?.startsWith("/assinar")) {
+        window.location.assign(`/assinar${trackingQuery()}`);
+        return;
       }
       const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : mode === "register" ? "/app/perfil?welcome=1" : "/app";
       router.replace(dest);
@@ -85,21 +99,27 @@ export function AuthForm({ mode, next }: { mode: "login" | "register"; next?: st
       {error && <p className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-sm font-medium text-rose-700">{error}</p>}
 
       <Button type="submit" size="xl" block loading={loading}>
-        {mode === "login" ? "Entrar" : "Criar conta grátis"} {!loading && <ArrowRight className="h-5 w-5" />}
+        {mode === "login" ? "Entrar" : pro ? "Criar conta e ir para o pagamento" : "Criar conta grátis"}{" "}
+        {!loading && <ArrowRight className="h-5 w-5" />}
       </Button>
+      {pro && (
+        <p className="flex items-center justify-center gap-1.5 text-xs text-ink-500">
+          <Lock className="h-3.5 w-3.5" /> Pagamento seguro pela Cakto. Cancele quando quiser.
+        </p>
+      )}
 
       <p className="text-center text-sm text-ink-600">
         {mode === "login" ? (
           <>
             Ainda não tem conta?{" "}
-            <Link href="/cadastro" className="font-semibold text-brand-700">
-              Criar grátis
+            <Link href={next?.startsWith("/assinar") ? "/cadastro?plano=pro" : "/cadastro"} className="font-semibold text-brand-700">
+              Criar conta
             </Link>
           </>
         ) : (
           <>
             Já tem conta?{" "}
-            <Link href="/login" className="font-semibold text-brand-700">
+            <Link href={pro ? "/login?next=/assinar" : "/login"} className="font-semibold text-brand-700">
               Entrar
             </Link>
           </>

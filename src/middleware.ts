@@ -19,6 +19,16 @@ export async function middleware(req: NextRequest) {
 
   if ((pathname === "/login" || pathname === "/cadastro") && session) {
     const url = req.nextUrl.clone();
+    // Já logado e vindo do "Assinar PRO": segue direto para o checkout.
+    if (pathname === "/cadastro" && req.nextUrl.searchParams.get("plano") === "pro") {
+      url.pathname = "/assinar";
+      url.searchParams.delete("plano");
+      return NextResponse.redirect(url);
+    }
+    const next = pathname === "/login" ? req.nextUrl.searchParams.get("next") : null;
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      return NextResponse.redirect(new URL(next, req.url));
+    }
     url.pathname = "/app";
     url.search = "";
     return NextResponse.redirect(url);

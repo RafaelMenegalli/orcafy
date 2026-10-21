@@ -30,8 +30,9 @@ async function main() {
         "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&q=70",
         "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&q=70",
       ],
-      pixKeyType: "EMAIL",
-      pixKey: "pix@rsestetica.com.br",
+      pixKeyType: "RANDOM",
+      // Chave aleatória de exemplo do Manual do BR Code (BCB): não pertence a ninguém.
+      pixKey: "123e4567-e12b-12d1-a456-426655440000",
       pixHolderName: "RAFAEL SOUZA",
       pixCity: "SAO PAULO",
       defaultDownPayment: 50,
