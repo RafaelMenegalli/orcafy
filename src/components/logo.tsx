@@ -2,16 +2,15 @@ import { cn } from "@/lib/format";
 
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <span
-      className={cn(
-        "relative inline-flex h-8 w-8 items-center justify-center rounded-[10px] bg-gradient-to-br from-brand-500 to-brand-700",
-        className,
-      )}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/orcafy-mark.png"
+      alt=""
       aria-hidden
-    >
-      <span className="h-[55%] w-[55%] rounded-full border-[3px] border-white" />
-      <span className="absolute right-[18%] top-[18%] h-[22%] w-[22%] rounded-full bg-amber-400" />
-    </span>
+      width={32}
+      height={32}
+      className={cn("h-8 w-8 shrink-0 rounded-[10px] bg-[#0a0e1a] shadow-sm ring-1 ring-black/5", className)}
+    />
   );
 }
 
@@ -19,7 +18,9 @@ export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink-900", className)}>
       <LogoMark />
-      Orçafy
+      <span>
+        Orça<span className="text-brand-600">fy</span>
+      </span>
     </span>
   );
 }

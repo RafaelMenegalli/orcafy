@@ -414,8 +414,13 @@ export function PublicQuote({ quote, provider, isOwner, pageUrl }: { quote: Publ
           <MessageCircle className="h-5 w-5 text-[#25D366]" /> Tirar uma dúvida no WhatsApp
         </a>
 
-        <p className="mt-8 text-center text-xs text-ink-400">
-          Proposta enviada via <span className="font-semibold text-ink-500">Orçafy</span>
+        <p className="mt-8 flex items-center justify-center gap-1.5 text-xs text-ink-400">
+          Proposta enviada via
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/orcafy-mark.png" alt="" width={16} height={16} className="h-4 w-4 rounded-[5px]" />
+          <span className="font-semibold text-ink-500">
+            Orça<span className="text-brand-600">fy</span>
+          </span>
         </p>
       </main>
 

@@ -1,9 +1,9 @@
 // Service Worker do Orçafy: instalação PWA + fallback offline simples.
-const CACHE = "orcafy-v1";
+const CACHE = "orcafy-v2";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([OFFLINE_URL, "/icons/192"])));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([OFFLINE_URL, "/icons/icon-192.png", "/brand/orcafy-mark.png"])));
   self.skipWaiting();
 });
 
@@ -27,7 +27,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Assets estáticos versionados do Next: cache primeiro.
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/") || url.pathname.startsWith("/brand/")) {
     event.respondWith(
       caches.match(request).then(
         (cached) =>

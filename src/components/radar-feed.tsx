@@ -95,7 +95,7 @@ export function RadarFeed({
         try {
           new Notification(strong ? "💰 Orçafy: oportunidade quente!" : "📡 Radar Orçafy", {
             body: text,
-            icon: "/icons/192",
+            icon: "/icons/icon-192.png",
             tag: top.id,
           });
         } catch {
